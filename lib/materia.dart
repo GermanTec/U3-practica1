@@ -19,5 +19,4 @@ class Materia{
       'docente':docente
     };
   }
-
 }

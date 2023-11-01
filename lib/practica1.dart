@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'materia.dart';
+import 'db.dart';
 
 class P31 extends StatefulWidget {
   const P31({super.key});
@@ -10,8 +11,8 @@ class P31 extends StatefulWidget {
 
 class _P31State extends State<P31> {
   int _index=0;
-  int _indice=0;
   String titulo="";
+  final idmateria=TextEditingController();
   final nombreM=TextEditingController();
   final semestre=TextEditingController();
   final docente=TextEditingController();
@@ -22,6 +23,17 @@ class _P31State extends State<P31> {
       docente: ""
   );
   List<Materia> data = [];
+
+  void actualizarLista() async{
+    List<Materia> temp=await DB.mostrarTodos();
+    setState(() {
+      data=temp;
+    });
+  }
+  @override
+  void initState(){
+    actualizarLista();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +64,7 @@ class _P31State extends State<P31> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 image: DecorationImage(
-                  image: NetworkImage("https://c.wallhere.com/photos/fa/d0/material_style_shapes_colorful-120490.jpg!d"),
+                  image: AssetImage("assets/fondo.jpeg"),
                   fit: BoxFit.fill
                 )
               ),
@@ -67,17 +79,17 @@ class _P31State extends State<P31> {
     );
   }
 
-  Widget _item(IconData icon,String text,int indice){
+  Widget _item(IconData icon,String text,int indi){
     return ListTile(
       onTap: (){
         setState(() {
-          _index=indice;
-          if(indice==0){
+          _index=indi;
+          if(indi==0){
             titulo="📚 Agregar materia";
-          }if(indice==1){
-            titulo="Administrar materias";
-          }if(_indice==2){
-            titulo="Tareas";
+          }if(indi==1){
+            titulo="📓 Administrar materias";
+          }if(indi==2){
+            titulo="📄 Tareas";
           }
         });
         Navigator.pop(context);
@@ -101,14 +113,13 @@ class _P31State extends State<P31> {
           child: Column(
             children: [
               Image(
-                image: NetworkImage("https://previews.123rf.com/images/dirkercken/dirkercken1110/dirkercken111000058/10985718-libros-de-educación-del-estudio-con-la-construcción-de-conocimiento-del-texto-de-aprendizaje-en-la.jpg"),
+                image: AssetImage("assets/materia.jpeg"),
                 fit: BoxFit.fill,
               ),
               Padding(
                 padding: EdgeInsets.all(15),
                 child: Row(
                   children: [
-
                     Text("📚 Agregar nueva materia",
                       style: TextStyle(
                           fontSize: 25,
@@ -126,6 +137,12 @@ class _P31State extends State<P31> {
                 child: Column(
                   children: [
                     TextField(
+                      controller: idmateria,
+                      decoration: InputDecoration(
+                        labelText: "Id de la materia",
+                      ),
+                    ),
+                    TextField(
                       controller: nombreM,
                       decoration: InputDecoration(
                         labelText: "Nombre de la materia"
@@ -136,7 +153,7 @@ class _P31State extends State<P31> {
                       decoration: new InputDecoration(
                         labelText: 'Semestre',
                       ),
-                      keyboardType: TextInputType.phone,
+                      keyboardType: TextInputType.number,
                       maxLength: 10,
                     ),
                     TextField(
@@ -145,12 +162,36 @@ class _P31State extends State<P31> {
                         labelText: "Docente"
                       ),
                     ),
-                    SizedBox(height: 40,),
+                    SizedBox(height: 20,),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        ElevatedButton(onPressed: (){}, child: Text("Agregar")),
-                        ElevatedButton(onPressed: (){}, child: Text("Limpiar"))
+                        ElevatedButton(
+                            onPressed: (){
+                              var temp=Materia(
+                                  idmateria: idmateria.text,
+                                  nombre: nombreM.text,
+                                  semestre: semestre.text,
+                                  docente: docente.text,
+                              );
+                              DB.insertar(temp).then((value){
+                                setState(() {
+                                  titulo="Se inserto correctamente👍🏻";
+                                });
+                                idmateria.text="";
+                                nombreM.text="";
+                                semestre.text="";
+                                docente.text="";
+                                actualizarLista();
+                              });
+                            },
+                            child: Text("Agregar")
+                        ),
+                        ElevatedButton(
+                            onPressed: (){
+
+                            },
+                            child: Text("Limpiar")),
                       ],
                     )
 
@@ -159,41 +200,61 @@ class _P31State extends State<P31> {
               )
             ],
           ),
-        );
+        );//INTERFAZ DE AGREGAR MATERIA
       }
       case 1:{
-        return Center(
-          child: Column(
-            children: [
-              Image(
-                image: NetworkImage("https://cdn.welcometothejungle.co/uploads/article/social_image/1455/158461/large_lista-tareas.jpg"),
-                fit: BoxFit.fill,
-              ),
+        return Column(
+          children: <Widget>[
+            Image(image: AssetImage("assets/tarea.jpeg")),
+            Expanded(child:
               ListView.builder(
                 itemCount: data.length,
                 itemBuilder: (context, indice){
                   return ListTile(
-                    title: Text("Nombre de la materia"),
-                    subtitle: Text("Docente"),
-                    leading: CircleAvatar(child: Text("1"), radius: 15,),
-                    trailing: IconButton(
-                      onPressed: (){
-                        setState(() {
-                          titulo="Se elimino correctamente";
-                        });
-                    },
-                    icon: Icon(Icons.delete),
+                    title: Text("${data[indice].nombre}"),
+                    subtitle: Text("Semestre: ${data[indice].semestre}     Docente:${data[indice].docente}"),
+                    leading: CircleAvatar(child: Text("${data[indice].idmateria}"), radius: 10,),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: (){
+
+                            setState(() {
+                              actualizarLista();
+                            });
+                          },
+                          icon: Icon(Icons.edit),
+                        ),
+                        IconButton(
+                          onPressed: (){
+                            DB.eliminar(data[indice].idmateria).then((value){
+                            setState(() {
+                              titulo="Se elimino correctamente👍🏻";
+                            });
+                              actualizarLista();
+                            });
+                          },
+                          icon: Icon(Icons.delete),
+                        ),
+                      ],
                     ),
                     onTap: (){
-                      setState(() {
-
-                      });
+                      estGlob=data[indice];
+                      agregarTarea(data[indice], indice);
                     },
                   );
-              })
-            ],
-          ),
-        );
+              }),
+            )
+          ],
+        );//INTERFAZ DE ADMIN MATERIA
+      }
+      case 2:{
+        return Column(
+          children: [
+
+          ],
+        );//INTERFAZ DE ADMIN TAREAS
       }
       default:{
         return Center();
@@ -201,4 +262,67 @@ class _P31State extends State<P31> {
     }
   }
 
+  void agregarTarea(Materia p, int ind) {
+    showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        elevation: 5,
+        builder: (builder) {
+          return Container(
+            padding: EdgeInsets.only(
+                top: 15,
+                left: 30,
+                right: 30,
+                bottom: MediaQuery
+                    .of(context)
+                    .viewInsets
+                    .bottom + 50
+            ),
+            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Agregar Tarea",
+                    style: TextStyle(
+                      fontSize: 25
+                    ),
+                  ),
+                  TextField(
+                    decoration: InputDecoration(
+                      labelText: "Materia"
+                    ),
+                  ),
+                  TextField(
+                    decoration: InputDecoration(
+                      labelText: "Estado de entrega"
+                    ),
+                  ),
+                  TextField(
+                    decoration: InputDecoration(
+                      labelText: "Descripcion"
+                    ),
+                  ),
+                  SizedBox(height: 20,),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton(
+                          onPressed: (){
+                            Navigator.pop(context);
+                          },
+                          child: Text("Agregar")
+                      ),
+                      ElevatedButton(
+                          onPressed: (){
+                            Navigator.pop(context);
+                          },
+                          child: Text("Cancelar")
+                      ),
+                    ],
+                  )
+                ]
+            ),
+          );
+        }
+    );
+  }
 }
