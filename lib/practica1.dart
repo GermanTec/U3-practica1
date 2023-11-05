@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'materia.dart';
 import 'db.dart';
+import 'tarea.dart';
 
 class P31 extends StatefulWidget {
   const P31({super.key});
@@ -12,10 +13,17 @@ class P31 extends StatefulWidget {
 class _P31State extends State<P31> {
   int _index=0;
   String titulo="";
+  //Controladores de Materia
   final idmateria=TextEditingController();
   final nombreM=TextEditingController();
   final semestre=TextEditingController();
   final docente=TextEditingController();
+  //Controladores de Tarea
+  final idtarea=TextEditingController();
+  final idmateriat=TextEditingController();
+  final estado=TextEditingController();
+  final descripcion=TextEditingController();
+
   Materia estGlob=Materia(
       idmateria: "",
       nombre: "",
@@ -30,10 +38,28 @@ class _P31State extends State<P31> {
       data=temp;
     });
   }
+
+  Tarea estGlobT=Tarea(
+      idtarea: 0,
+      idmateria: "",
+      entrega: "",
+      descripcion: ""
+  );
+  List<Tarea> data2=[];
+
+  void actualizarTareas() async{
+    List<Tarea> tempT=await DB.mostrarTodasTareas();
+    setState(() {
+      data2=tempT;
+    });
+  }
   @override
   void initState(){
     actualizarLista();
+    actualizarTareas();
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -109,96 +135,98 @@ class _P31State extends State<P31> {
   Widget dinamico(){
     switch (_index){
       case 0:{
-        return Center(
-          child: Column(
-            children: [
-              Image(
-                image: AssetImage("assets/materia.jpeg"),
-                fit: BoxFit.fill,
-              ),
-              Padding(
-                padding: EdgeInsets.all(15),
-                child: Row(
-                  children: [
-                    Text("📚 Agregar nueva materia",
-                      style: TextStyle(
-                          fontSize: 25,
-                          color: Colors.black,
-                          fontStyle: FontStyle.italic,
-                          fontWeight: FontWeight.bold
-                      ),
-                    ),
-
-                  ],
+        return SingleChildScrollView(
+          child: Center(
+            child: Column(
+              children: [
+                Image(
+                  image: AssetImage("assets/materia.jpeg"),
+                  fit: BoxFit.fill,
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.all(15),
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: idmateria,
-                      decoration: InputDecoration(
-                        labelText: "Id de la materia",
+                Padding(
+                  padding: EdgeInsets.all(15),
+                  child: Row(
+                    children: [
+                      Text("📚 Agregar nueva materia",
+                        style: TextStyle(
+                            fontSize: 25,
+                            color: Colors.black,
+                            fontStyle: FontStyle.italic,
+                            fontWeight: FontWeight.bold
+                        ),
                       ),
-                    ),
-                    TextField(
-                      controller: nombreM,
-                      decoration: InputDecoration(
-                        labelText: "Nombre de la materia"
+
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.all(15),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: idmateria,
+                        decoration: InputDecoration(
+                          labelText: "Id de la materia",
+                        ),
                       ),
-                    ),
-                    TextFormField(
-                      controller: semestre,
-                      decoration: new InputDecoration(
-                        labelText: 'Semestre',
+                      TextField(
+                        controller: nombreM,
+                        decoration: InputDecoration(
+                            labelText: "Nombre de la materia"
+                        ),
                       ),
-                      keyboardType: TextInputType.number,
-                      maxLength: 10,
-                    ),
-                    TextField(
-                      controller: docente,
-                      decoration: InputDecoration(
-                        labelText: "Docente"
+                      TextFormField(
+                        controller: semestre,
+                        decoration: new InputDecoration(
+                          labelText: 'Semestre',
+                        ),
+                        keyboardType: TextInputType.number,
+                        maxLength: 10,
                       ),
-                    ),
-                    SizedBox(height: 20,),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        ElevatedButton(
-                            onPressed: (){
-                              var temp=Materia(
+                      TextField(
+                        controller: docente,
+                        decoration: InputDecoration(
+                            labelText: "Docente"
+                        ),
+                      ),
+                      SizedBox(height: 20,),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton(
+                              onPressed: (){
+                                var temp=Materia(
                                   idmateria: idmateria.text,
                                   nombre: nombreM.text,
                                   semestre: semestre.text,
                                   docente: docente.text,
-                              );
-                              DB.insertar(temp).then((value){
-                                setState(() {
-                                  titulo="Se inserto correctamente👍🏻";
+                                );
+                                DB.insertar(temp).then((value){
+                                  setState(() {
+                                    titulo="Se inserto correctamente👍🏻";
+                                  });
+                                  idmateria.text="";
+                                  nombreM.text="";
+                                  semestre.text="";
+                                  docente.text="";
+                                  actualizarLista();
                                 });
-                                idmateria.text="";
-                                nombreM.text="";
-                                semestre.text="";
-                                docente.text="";
-                                actualizarLista();
-                              });
-                            },
-                            child: Text("Agregar")
-                        ),
-                        ElevatedButton(
-                            onPressed: (){
+                              },
+                              child: Text("Agregar")
+                          ),
+                          ElevatedButton(
+                              onPressed: (){
 
-                            },
-                            child: Text("Limpiar")),
-                      ],
-                    )
+                              },
+                              child: Text("Limpiar")),
+                        ],
+                      )
 
-                  ],
-                ),
-              )
-            ],
+                    ],
+                  ),
+                )
+              ],
+            ),
           ),
         );//INTERFAZ DE AGREGAR MATERIA
       }
@@ -206,6 +234,13 @@ class _P31State extends State<P31> {
         return Column(
           children: <Widget>[
             Image(image: AssetImage("assets/tarea.jpeg")),
+            SizedBox(height: 20,),
+            Text("Seleccione materia para agreagar tarea",
+              style: TextStyle(
+                fontSize: 20
+              ),
+            ),
+            SizedBox(height: 20,),
             Expanded(child:
               ListView.builder(
                 itemCount: data.length,
@@ -221,7 +256,7 @@ class _P31State extends State<P31> {
                           onPressed: (){
 
                             setState(() {
-                              actualizarLista();
+
                             });
                           },
                           icon: Icon(Icons.edit),
@@ -242,6 +277,9 @@ class _P31State extends State<P31> {
                     onTap: (){
                       estGlob=data[indice];
                       agregarTarea(data[indice], indice);
+                      setState(() {
+                        idmateriat.text=data[indice].idmateria;
+                      });
                     },
                   );
               }),
@@ -250,11 +288,53 @@ class _P31State extends State<P31> {
         );//INTERFAZ DE ADMIN MATERIA
       }
       case 2:{
-        return Column(
-          children: [
+        return ListView.builder(
+        itemCount: data2.length,
+        itemBuilder: (context, indice){
+          return Padding(
+            padding: EdgeInsets.all(8),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.amberAccent,
+              ),
+              height: 75,
+              child: ListTile(
+                title: Text("${data2[indice].descripcion}"),
+                subtitle: Text("Fecha de entrega: ${data2[indice].entrega}"),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      onPressed: (){
+                        setState(() {
+                          actualizarTareas();
+                        });
+                      },
+                      icon: Icon(Icons.edit),
+                    ),
+                    IconButton(
+                      onPressed: (){
+                        DB.eliminarT(data2[indice].idtarea).then((value){
+                          setState(() {
+                            titulo="Se elimino correctamente👍🏻";
+                          });
+                          actualizarTareas();
+                        });
+                      },
+                      icon: Icon(Icons.delete),
+                    ),
+                  ],
+                ),
+                onTap: (){
+                  setState(() {
 
-          ],
-        );//INTERFAZ DE ADMIN TAREAS
+                  });
+                },
+              ),
+            ),
+          );
+        });//INTERFAZ DE ADMIN TAREAS
       }
       default:{
         return Center();
@@ -287,16 +367,21 @@ class _P31State extends State<P31> {
                     ),
                   ),
                   TextField(
+                    enabled: false,
+                    controller: idmateriat,
                     decoration: InputDecoration(
                       labelText: "Materia"
                     ),
                   ),
                   TextField(
+                    controller: estado,
                     decoration: InputDecoration(
-                      labelText: "Estado de entrega"
+                      labelText: "Fecha de entrega"
                     ),
+                    keyboardType: TextInputType.datetime,
                   ),
                   TextField(
+                    controller: descripcion,
                     decoration: InputDecoration(
                       labelText: "Descripcion"
                     ),
@@ -307,13 +392,30 @@ class _P31State extends State<P31> {
                     children: [
                       ElevatedButton(
                           onPressed: (){
-                            Navigator.pop(context);
+                            var tempT=Tarea(
+                              idmateria: idmateriat.text,
+                              entrega: estado.text,
+                              descripcion: descripcion.text,
+                            );
+                            DB.insertarT(tempT).then((value) {
+                              setState(() {
+                                titulo = "Se inserto correctamente👍🏻";
+                              });
+                              idmateriat.text = "";
+                              estado.text = "";
+                              descripcion.text = "";
+                              actualizarTareas();
+                              Navigator.pop(context);
+                            });
                           },
                           child: Text("Agregar")
                       ),
                       ElevatedButton(
                           onPressed: (){
                             Navigator.pop(context);
+                            idmateriat.text = "";
+                            estado.text = "";
+                            descripcion.text = "";
                           },
                           child: Text("Cancelar")
                       ),
