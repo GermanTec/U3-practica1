@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'materia.dart';
 import 'db.dart';
 import 'tarea.dart';
+import 'package:dam_u3_practica1/modificarMateria.dart';
 
 class P31 extends StatefulWidget {
   const P31({super.key});
@@ -11,8 +12,8 @@ class P31 extends StatefulWidget {
 }
 
 class _P31State extends State<P31> {
-  int _index=0;
-  String titulo="";
+  int _index=1;
+  String titulo="📓 Administrar materias";
   //Controladores de Materia
   final idmateria=TextEditingController();
   final nombreM=TextEditingController();
@@ -254,10 +255,18 @@ class _P31State extends State<P31> {
                       children: [
                         IconButton(
                           onPressed: (){
-
-                            setState(() {
-
-                            });
+                            estGlob=data[indice];
+                            Navigator.push(context, MaterialPageRoute(
+                                builder: (builder){
+                                  return ModMat(
+                                      data[indice].idmateria,
+                                      data[indice].nombre,
+                                      data[indice].semestre,
+                                      data[indice].docente
+                                  );
+                                }
+                            )
+                            );
                           },
                           icon: Icon(Icons.edit),
                         ),
@@ -280,6 +289,7 @@ class _P31State extends State<P31> {
                       setState(() {
                         idmateriat.text=data[indice].idmateria;
                       });
+                      actualizarLista();
                     },
                   );
               }),
@@ -427,4 +437,5 @@ class _P31State extends State<P31> {
         }
     );
   }
+
 }
