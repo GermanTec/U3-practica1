@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'materia.dart';
 import 'db.dart';
 import 'tarea.dart';
-import 'package:dam_u3_practica1/modificarMateria.dart';
 
 class P31 extends StatefulWidget {
   const P31({super.key});
@@ -24,6 +23,7 @@ class _P31State extends State<P31> {
   final idmateriat=TextEditingController();
   final estado=TextEditingController();
   final descripcion=TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
   Materia estGlob=Materia(
       idmateria: "",
@@ -54,12 +54,28 @@ class _P31State extends State<P31> {
       data2=tempT;
     });
   }
+
+  Tarea estGlobTP=Tarea(
+      idtarea: 0,
+      idmateria: "",
+      entrega: "",
+      descripcion: ""
+  );
+  List<Tarea> data2P=[];
+
+  void actualizarTareasP() async{
+    List<Tarea> tempT=await DB.mostrarTareasPosteriores();
+    setState(() {
+      data2P=tempT;
+    });
+  }
+
   @override
   void initState(){
     actualizarLista();
     actualizarTareas();
+    actualizarTareasP();
   }
-
 
 
   @override
@@ -162,7 +178,10 @@ class _P31State extends State<P31> {
                 ),
                 Padding(
                   padding: EdgeInsets.all(15),
-                  child: Column(
+                  child: Form(
+                    key: _formKey,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    child: Column(
                     children: [
                       TextField(
                         controller: idmateria,
@@ -178,11 +197,15 @@ class _P31State extends State<P31> {
                       ),
                       TextFormField(
                         controller: semestre,
-                        decoration: new InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Semestre',
                         ),
-                        keyboardType: TextInputType.number,
-                        maxLength: 10,
+                        validator: (value) {
+                          if (value!.isEmpty || !RegExp(r'^[A-Z]{3}-[A-Z]{3}\d{4}$').hasMatch(value!)) {
+                            return "Formato inválido. Debe ser: AGO-DIC2023";
+                          }
+                          return null;
+                        },
                       ),
                       TextField(
                         controller: docente,
@@ -196,22 +219,26 @@ class _P31State extends State<P31> {
                         children: [
                           ElevatedButton(
                               onPressed: (){
-                                var temp=Materia(
-                                  idmateria: idmateria.text,
-                                  nombre: nombreM.text,
-                                  semestre: semestre.text,
-                                  docente: docente.text,
-                                );
-                                DB.insertar(temp).then((value){
-                                  setState(() {
-                                    titulo="Se inserto correctamente👍🏻";
-                                  });
-                                  idmateria.text="";
-                                  nombreM.text="";
-                                  semestre.text="";
-                                  docente.text="";
-                                  actualizarLista();
-                                });
+                                if (_formKey.currentState!.validate()) {
+                                  var temp=Materia(
+                                    idmateria: idmateria.text,
+                                    nombre: nombreM.text,
+                                    semestre: semestre.text,
+                                    docente: docente.text,
+                                  );
+                                  DB.insertar(temp).then((value){
+                                    setState(() {
+                                      titulo="Se inserto correctamente👍🏻";
+                                      _index=1;
+                                    });
+                                    idmateria.text="";
+                                    nombreM.text="";
+                                    semestre.text="";
+                                    docente.text="";
+                                    actualizarLista();
+                                  });// La validación es exitosa, puedes realizar la acción deseada aquí.
+                                }
+
                               },
                               child: Text("Agregar")
                           ),
@@ -224,6 +251,7 @@ class _P31State extends State<P31> {
                       )
 
                     ],
+                  ),
                   ),
                 )
               ],
@@ -248,7 +276,7 @@ class _P31State extends State<P31> {
                 itemBuilder: (context, indice){
                   return ListTile(
                     title: Text("${data[indice].nombre}"),
-                    subtitle: Text("Semestre: ${data[indice].semestre}     Docente:${data[indice].docente}"),
+                    subtitle: Text("Semestre: ${data[indice].semestre}\nDocente:${data[indice].docente}"),
                     leading: CircleAvatar(child: Text("${data[indice].idmateria}"), radius: 10,),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -256,17 +284,7 @@ class _P31State extends State<P31> {
                         IconButton(
                           onPressed: (){
                             estGlob=data[indice];
-                            Navigator.push(context, MaterialPageRoute(
-                                builder: (builder){
-                                  return ModMat(
-                                      data[indice].idmateria,
-                                      data[indice].nombre,
-                                      data[indice].semestre,
-                                      data[indice].docente
-                                  );
-                                }
-                            )
-                            );
+                            actualizarM(data[indice], indice);
                           },
                           icon: Icon(Icons.edit),
                         ),
@@ -277,6 +295,8 @@ class _P31State extends State<P31> {
                               titulo="Se elimino correctamente👍🏻";
                             });
                               actualizarLista();
+                            actualizarTareas();
+                            actualizarTareasP();
                             });
                           },
                           icon: Icon(Icons.delete),
@@ -290,6 +310,8 @@ class _P31State extends State<P31> {
                         idmateriat.text=data[indice].idmateria;
                       });
                       actualizarLista();
+                      actualizarTareasP();
+                      actualizarTareasP();
                     },
                   );
               }),
@@ -298,53 +320,102 @@ class _P31State extends State<P31> {
         );//INTERFAZ DE ADMIN MATERIA
       }
       case 2:{
-        return ListView.builder(
-        itemCount: data2.length,
-        itemBuilder: (context, indice){
-          return Padding(
-            padding: EdgeInsets.all(8),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                color: Colors.amberAccent,
-              ),
-              height: 75,
-              child: ListTile(
-                title: Text("${data2[indice].descripcion}"),
-                subtitle: Text("Fecha de entrega: ${data2[indice].entrega}"),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      onPressed: (){
-                        setState(() {
-                          actualizarTareas();
-                        });
-                      },
-                      icon: Icon(Icons.edit),
+        return Column(
+          children: <Widget>[
+            SizedBox(height: 20,),
+            Text("Tareas de HOY!!",style: TextStyle(fontSize: 20),),
+            Expanded(child: ListView.builder(
+                itemCount: data2.length,
+                itemBuilder: (context, indice){
+                  return Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.amberAccent,
+                      ),
+                      height: 75,
+                      child: ListTile(
+                        title: Text("${data2[indice].descripcion}"),
+                        subtitle: Text("Fecha de entrega: ${data2[indice].entrega}"),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: (){
+                                estGlobT=data2[indice];
+                                actualizarT(data2[indice], indice);
+                                setState(() {
+                                  actualizarTareas();
+                                });
+                              },
+                              icon: Icon(Icons.edit),
+                            ),
+                            IconButton(
+                              onPressed: (){
+                                DB.eliminarT(data2[indice].idtarea).then((value){
+                                  setState(() {
+                                    titulo="Se elimino correctamente👍🏻";
+                                  });
+                                  actualizarTareas();
+                                });
+                              },
+                              icon: Icon(Icons.delete),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    IconButton(
-                      onPressed: (){
-                        DB.eliminarT(data2[indice].idtarea).then((value){
-                          setState(() {
-                            titulo="Se elimino correctamente👍🏻";
-                          });
-                          actualizarTareas();
-                        });
-                      },
-                      icon: Icon(Icons.delete),
+                  );
+                })),
+            Text("Tareas proximas",style: TextStyle(fontSize: 20),),
+            Expanded(
+                child: ListView.builder(
+                itemCount: data2P.length,
+                itemBuilder: (context, indice){
+                  return Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.amberAccent,
+                      ),
+                      height: 75,
+                      child: ListTile(
+                        title: Text("${data2P[indice].descripcion}"),
+                        subtitle: Text("Fecha de entrega: ${data2P[indice].entrega}"),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              onPressed: (){
+                                estGlobTP=data2P[indice];
+                                actualizarTP(data2P[indice], indice);
+                                setState(() {
+                                  actualizarTareasP();
+                                });
+                              },
+                              icon: Icon(Icons.edit),
+                            ),
+                            IconButton(
+                              onPressed: (){
+                                DB.eliminarT(data2P[indice].idtarea).then((value){
+                                  setState(() {
+                                    titulo="Se elimino correctamente👍🏻";
+                                  });
+                                  actualizarTareasP();
+                                });
+                              },
+                              icon: Icon(Icons.delete),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-                onTap: (){
-                  setState(() {
-
-                  });
-                },
-              ),
-            ),
-          );
-        });//INTERFAZ DE ADMIN TAREAS
+                  );
+                }))
+          ],
+        );//INTERFAZ DE ADMIN TAREAS
       }
       default:{
         return Center();
@@ -368,74 +439,309 @@ class _P31State extends State<P31> {
                     .viewInsets
                     .bottom + 50
             ),
-            child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text("Agregar Tarea",
-                    style: TextStyle(
-                      fontSize: 25
+            child: Form(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("Agregar Tarea",
+                      style: TextStyle(
+                          fontSize: 25
+                      ),
                     ),
-                  ),
-                  TextField(
-                    enabled: false,
-                    controller: idmateriat,
-                    decoration: InputDecoration(
-                      labelText: "Materia"
+                    TextField(
+                      enabled: false,
+                      controller: idmateriat,
+                      decoration: InputDecoration(
+                          labelText: "Materia"
+                      ),
                     ),
-                  ),
-                  TextField(
-                    controller: estado,
-                    decoration: InputDecoration(
-                      labelText: "Fecha de entrega"
+                    TextFormField(
+                      controller: estado,
+                      decoration: InputDecoration(
+                          labelText: "Fecha de entrega"
+                      ),
+                      validator: (value) {
+                        if (value!.isEmpty || !RegExp(r'^\d{4}/\d{2}/\d{2}$').hasMatch(value!)) {
+                          return 'Formato de fecha no válido YYYY/MM/DD';
+                        }
+                        return null; // La entrada es válida.
+                      },
+                      keyboardType: TextInputType.datetime,
                     ),
-                    keyboardType: TextInputType.datetime,
-                  ),
-                  TextField(
-                    controller: descripcion,
-                    decoration: InputDecoration(
-                      labelText: "Descripcion"
+                    TextField(
+                      controller: descripcion,
+                      decoration: InputDecoration(
+                          labelText: "Descripcion"
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 20,),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                          onPressed: (){
-                            var tempT=Tarea(
-                              idmateria: idmateriat.text,
-                              entrega: estado.text,
-                              descripcion: descripcion.text,
-                            );
-                            DB.insertarT(tempT).then((value) {
-                              setState(() {
-                                titulo = "Se inserto correctamente👍🏻";
-                              });
+                    SizedBox(height: 20,),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                            onPressed: (){
+                              if (_formKey.currentState!.validate()) {
+                                var tempT = Tarea(
+                                  idmateria: idmateriat.text,
+                                  entrega: estado.text,
+                                  descripcion: descripcion.text,
+                                );
+                                DB.insertarT(tempT).then((value) {
+                                  setState(() {
+                                    titulo = "Se inserto correctamente👍🏻";
+                                  });
+                                  idmateriat.text = "";
+                                  estado.text = "";
+                                  descripcion.text = "";
+                                  actualizarTareas();
+                                  Navigator.pop(context);
+                                });
+                              }
+                            },
+                            child: Text("Agregar")
+                        ),
+                        ElevatedButton(
+                            onPressed: (){
+                              Navigator.pop(context);
                               idmateriat.text = "";
                               estado.text = "";
                               descripcion.text = "";
-                              actualizarTareas();
-                              Navigator.pop(context);
-                            });
-                          },
-                          child: Text("Agregar")
-                      ),
-                      ElevatedButton(
-                          onPressed: (){
-                            Navigator.pop(context);
-                            idmateriat.text = "";
-                            estado.text = "";
-                            descripcion.text = "";
-                          },
-                          child: Text("Cancelar")
-                      ),
-                    ],
-                  )
-                ]
+                            },
+                            child: Text("Cancelar")
+                        ),
+                      ],
+                    )
+                  ]
+              ),
             ),
           );
         }
     );
   }
+
+  void actualizarM(Materia p, int ind){
+    nombreM.text = estGlob.nombre;
+    semestre.text = estGlob.semestre;
+    docente.text = estGlob.docente;
+    showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        elevation: 5,
+        builder: (builder) {
+          return ListView(
+            padding: EdgeInsets.all(40),
+            children: [
+              SizedBox(height: 20,),
+              Text("Idmateria: ${estGlob.idmateria}", style: TextStyle(fontSize: 20),),
+              SizedBox(height: 30,),
+              TextField(
+                controller: nombreM,
+                decoration: InputDecoration(
+                    labelText: "Nombre:"
+                ),
+              ),
+              SizedBox(height: 10,),
+              TextField(
+                controller: semestre,
+                decoration: InputDecoration(
+                    labelText: "semestre:"
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              SizedBox(height: 10,),
+              TextField(
+                controller: docente,
+                decoration: InputDecoration(
+                    labelText: "Docente:"
+                ),
+              ),
+              SizedBox(height: 10,),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  ElevatedButton(
+                    onPressed: (){
+                      estGlob.nombre = nombreM.text;
+                      estGlob.semestre = semestre.text;
+                      estGlob.docente = docente.text;
+                      DB.actualizar(estGlob).then((value) {
+                        if(value>0){
+                          setState(() {
+                            titulo = "Se actualizo correctamente👍🏻";
+                          });
+                          nombreM.text="";
+                          semestre.text="";
+                          docente.text="";
+                          estGlob = Materia(idmateria: "", nombre: "", semestre: "", docente: "");
+                          Navigator.pop(context);
+                        }
+                      });
+                    },
+                    child: Text("Actualizar"),
+                  ),
+                  ElevatedButton(
+                    onPressed: (){
+                      nombreM.text="";
+                      semestre.text="";
+                      docente.text="";
+                      estGlob = Materia(idmateria: "", nombre: "", semestre: "", docente: "");
+                      Navigator.pop(context);
+                    },
+                    child: Text("Cancelar"),
+                  ),
+                ],
+              )
+            ],
+          );
+        }
+    );
+  }
+
+  void actualizarT(Tarea p, int ind){
+    idmateriat.text=estGlobT.idmateria;
+    estado.text = estGlobT.entrega;
+    descripcion.text = estGlobT.descripcion;
+    showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        elevation: 5,
+        builder: (builder) {
+          return ListView(
+            padding: EdgeInsets.all(40),
+            children: [
+              SizedBox(height: 20,),
+              Text("Id Tarea: ${estGlobT.idtarea}", style: TextStyle(fontSize: 20),),
+              SizedBox(height: 30,),
+              TextField(
+                controller: estado,
+                decoration: InputDecoration(
+                    labelText: "Fecha de entrega:"
+                ),
+              ),
+              SizedBox(height: 10,),
+              TextField(
+                controller: descripcion,
+                decoration: InputDecoration(
+                    labelText: "Descripcion:"
+                ),
+              ),
+              SizedBox(height: 10,),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  ElevatedButton(
+                    onPressed: (){
+                      estGlobT.idmateria=idmateriat.text;
+                      estGlobT.entrega = estado.text;
+                      estGlobT.descripcion = descripcion.text;
+                      DB.actualizarT(estGlobT).then((value) {
+                        if(value>0){
+                          setState(() {
+                            titulo = "Se actualizo correctamente👍🏻";
+                          });
+                          idmateriat.text="";
+                          estado.text="";
+                          descripcion.text="";
+                          estGlobT = Tarea(idtarea: 0,idmateria: "", entrega: "", descripcion: "");
+                          Navigator.pop(context);
+                        }
+                        actualizarTareas();
+                      });
+                    },
+                    child: Text("Actualizar"),
+                  ),
+                  ElevatedButton(
+                    onPressed: (){
+                      idmateriat.text="";
+                      estado.text="";
+                      descripcion.text="";
+                      estGlobT = Tarea(idtarea: 0,idmateria: "", entrega: "", descripcion: "");
+                      Navigator.pop(context);
+                      actualizarTareas();
+                    },
+                    child: Text("Cancelar"),
+                  ),
+                ],
+              )
+            ],
+          );
+        }
+    );
+  }
+
+  void actualizarTP(Tarea p, int ind){
+    idmateriat.text=estGlobTP.idmateria;
+    estado.text = estGlobTP.entrega;
+    descripcion.text = estGlobTP.descripcion;
+    showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        elevation: 5,
+        builder: (builder) {
+          return ListView(
+            padding: EdgeInsets.all(40),
+            children: [
+              SizedBox(height: 20,),
+              Text("Id Tarea: ${estGlobTP.idtarea}", style: TextStyle(fontSize: 20),),
+              SizedBox(height: 30,),
+              TextField(
+                controller: estado,
+                decoration: InputDecoration(
+                    labelText: "Fecha de entrega:"
+                ),
+              ),
+              SizedBox(height: 10,),
+              TextField(
+                controller: descripcion,
+                decoration: InputDecoration(
+                    labelText: "Descripcion:"
+                ),
+              ),
+              SizedBox(height: 10,),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  ElevatedButton(
+                    onPressed: (){
+                      estGlobTP.idmateria=idmateriat.text;
+                      estGlobTP.entrega = estado.text;
+                      estGlobTP.descripcion = descripcion.text;
+                      DB.actualizarT(estGlobTP).then((value) {
+                        if(value>0){
+                          setState(() {
+                            titulo = "Se actualizo correctamente👍🏻";
+                          });
+                          idmateriat.text="";
+                          estado.text="";
+                          descripcion.text="";
+                          estGlobTP = Tarea(idtarea: 0,idmateria: "", entrega: "", descripcion: "");
+                          Navigator.pop(context);
+                        }
+                        actualizarTareasP();
+                      });
+                    },
+                    child: Text("Actualizar"),
+                  ),
+                  ElevatedButton(
+                    onPressed: (){
+                      idmateriat.text="";
+                      estado.text="";
+                      descripcion.text="";
+                      estGlobTP = Tarea(idtarea: 0,idmateria: "", entrega: "", descripcion: "");
+                      Navigator.pop(context);
+                      actualizarTareasP();
+                    },
+                    child: Text("Cancelar"),
+                  ),
+                ],
+              )
+            ],
+          );
+        }
+    );
+  }
+
 
 }

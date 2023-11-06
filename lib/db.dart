@@ -71,7 +71,34 @@ class DB{
 
   static Future<List<Tarea>> mostrarTodasTareas() async{
     Database db=await _abrirDB();
-    List<Map<String,dynamic>> resultado=await db.query("TAREA");
+    final DateTime now=DateTime.now();
+    final int currentMonth = now.month;
+    final int currentYear = now.year;
+    final int currentDay=now.day;
+    final String formattedCurrentDate = '$currentYear/${currentMonth.toString().padLeft(2, '0')}/${currentDay.toString().padLeft(2, '0')}';
+
+    List<Map<String,dynamic>> resultado=await db.query("TAREA",where: "F_ENTREGA LIKE ?",
+      whereArgs: ['$formattedCurrentDate%'], orderBy: 'F_ENTREGA ASC',);
+    return List.generate(resultado.length , (index){
+      return Tarea(
+          idtarea: resultado[index]['IDTAREA'],
+          idmateria: resultado[index]['IDMATERIA'],
+          entrega: resultado[index]['F_ENTREGA'],
+          descripcion: resultado[index]['DESCRIPCION']
+      );
+    });
+  }
+
+  static Future<List<Tarea>> mostrarTareasPosteriores() async{
+    Database db=await _abrirDB();
+    final DateTime now=DateTime.now();
+    final int currentMonth = now.month;
+    final int currentYear = now.year;
+    final int currentDay = now.day;
+    final String formattedCurrentDate = '$currentYear/${currentMonth.toString().padLeft(2, '0')}/${currentDay.toString().padLeft(2, '0')}';
+
+    List<Map<String,dynamic>> resultado=await db.query("TAREA",where: "F_ENTREGA NOT LIKE ?",
+      whereArgs: ['$formattedCurrentDate%'], orderBy: 'F_ENTREGA ASC',);
     return List.generate(resultado.length , (index){
       return Tarea(
           idtarea: resultado[index]['IDTAREA'],

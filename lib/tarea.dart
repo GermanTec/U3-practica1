@@ -15,7 +15,7 @@ class Tarea{
     return {
       'idtarea': idtarea,
       'idmateria': idmateria,
-      'entrega': entrega,
+      'f_entrega': entrega,
       'descripcion': descripcion
     };
   }
