@@ -530,70 +530,84 @@ class _P31State extends State<P31> {
         isScrollControlled: true,
         elevation: 5,
         builder: (builder) {
-          return ListView(
-            padding: EdgeInsets.all(40),
-            children: [
-              SizedBox(height: 20,),
-              Text("Idmateria: ${estGlob.idmateria}", style: TextStyle(fontSize: 20),),
-              SizedBox(height: 30,),
-              TextField(
-                controller: nombreM,
-                decoration: InputDecoration(
-                    labelText: "Nombre:"
-                ),
-              ),
-              SizedBox(height: 10,),
-              TextField(
-                controller: semestre,
-                decoration: InputDecoration(
-                    labelText: "semestre:"
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              SizedBox(height: 10,),
-              TextField(
-                controller: docente,
-                decoration: InputDecoration(
-                    labelText: "Docente:"
-                ),
-              ),
-              SizedBox(height: 10,),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+          return Form(
+            key: _formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: ListView(
+                padding: EdgeInsets.all(40),
                 children: [
-                  ElevatedButton(
-                    onPressed: (){
-                      estGlob.nombre = nombreM.text;
-                      estGlob.semestre = semestre.text;
-                      estGlob.docente = docente.text;
-                      DB.actualizar(estGlob).then((value) {
-                        if(value>0){
-                          setState(() {
-                            titulo = "Se actualizo correctamente👍🏻";
-                          });
+                  SizedBox(height: 20,),
+                  Text("Idmateria: ${estGlob.idmateria}", style: TextStyle(fontSize: 20),),
+                  SizedBox(height: 30,),
+                  TextField(
+                    controller: nombreM,
+                    decoration: InputDecoration(
+                        labelText: "Nombre:"
+                    ),
+                  ),
+                  SizedBox(height: 10,),
+                  TextFormField(
+                    controller: semestre,
+                    decoration: InputDecoration(
+                      labelText: 'Semestre',
+                    ),
+                    validator: (value) {
+                      if (value!.isEmpty || !RegExp(r'^[A-Z]{3}-[A-Z]{3}\d{4}$').hasMatch(value!)) {
+                        return "Formato inválido. Debe ser: AGO-DIC2023";
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 10,),
+                  TextField(
+                    controller: docente,
+                    decoration: InputDecoration(
+                        labelText: "Docente:"
+                    ),
+                  ),
+                  SizedBox(height: 10,),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      ElevatedButton(
+                        onPressed: (){
+                          if (_formKey.currentState!.validate()) {
+                            estGlob.nombre = nombreM.text;
+                            estGlob.semestre = semestre.text;
+                            estGlob.docente = docente.text;
+                            DB.actualizar(estGlob).then((value) {
+                              if (value > 0) {
+                                setState(() {
+                                  titulo = "Se actualizo correctamente👍🏻";
+                                });
+                                nombreM.text = "";
+                                semestre.text = "";
+                                docente.text = "";
+                                estGlob = Materia(idmateria: "",
+                                    nombre: "",
+                                    semestre: "",
+                                    docente: "");
+                                Navigator.pop(context);
+                              }
+                            });
+                          }
+                        },
+                        child: Text("Actualizar"),
+                      ),
+                      ElevatedButton(
+                        onPressed: (){
                           nombreM.text="";
                           semestre.text="";
                           docente.text="";
                           estGlob = Materia(idmateria: "", nombre: "", semestre: "", docente: "");
                           Navigator.pop(context);
-                        }
-                      });
-                    },
-                    child: Text("Actualizar"),
-                  ),
-                  ElevatedButton(
-                    onPressed: (){
-                      nombreM.text="";
-                      semestre.text="";
-                      docente.text="";
-                      estGlob = Materia(idmateria: "", nombre: "", semestre: "", docente: "");
-                      Navigator.pop(context);
-                    },
-                    child: Text("Cancelar"),
-                  ),
+                        },
+                        child: Text("Cancelar"),
+                      ),
+                    ],
+                  )
                 ],
-              )
-            ],
+              ),
           );
         }
     );
